@@ -7,10 +7,10 @@ export const registerController = async (req, res) => {
     const existing_email = await users.findOne({
       email: req.body.email,
     });
-    const existing_phone = await users.findOne({
-      phone: req.body.phone,
+    const existing_username = await users.findOne({
+      username: req.body.username,
     });
-    if (existing_email || existing_phone) {
+    if (existing_email || existing_username) {
       console.log("User already exists");
       return res.status(200).send({
         success: false,
@@ -40,13 +40,18 @@ export const registerController = async (req, res) => {
 export const loginController = async (req, res) => {
   //LOGIN USER
   try {
-    const user_email = req.body.email;
-    const existing_user = await users.findOne({ email: user_email });
+    const user_usernameOrEmail = req.body.usernameOrEmail;
+    let existing_user = await users.findOne({
+      username: user_usernameOrEmail,
+    });
     if (!existing_user) {
-      return res.status(404).send({
-        success: false,
-        message: "User not found. Better sign up",
-      });
+      existing_user = await users.findOne({ email: user_usernameOrEmail });
+      if (!existing_user) {
+        return res.status(404).send({
+          success: false,
+          message: "User not found. Better sign up",
+        });
+      }
     }
     const user = existing_user;
     const user_password = req.body.password;
@@ -81,6 +86,25 @@ export const loginController = async (req, res) => {
     res.status(500).send({
       success: false,
       message: "Error in Login api",
+    });
+  }
+};
+
+//GET CURRENT USER
+export const currentUserController = async (req, res) => {
+  try {
+    const user = await users.findOne({ _id: req.body.userId });
+    return res.status(200).send({
+      success: true,
+      message: "User data fetched successfully",
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Cannot get current user",
+      error,
     });
   }
 };
