@@ -1,6 +1,8 @@
 import users from "../models/users.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { transporter } from "../config/mail.js";
 
 export const registerController = async (req, res) => {
   try {
@@ -17,12 +19,34 @@ export const registerController = async (req, res) => {
         message: "User already exists",
       });
     }
+
     //HASHING PASSWORD
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
     req.body.password = hashedPassword;
 
+    //GENERATE RANDOM PIN
+    const n = crypto.randomInt(0, 1000000);
+    const pin = n.toString().padStart(6, "0");
+
+    // SEND MAIL
+    const mailOptions = {
+      from: "sapta21ee8103nitdgp@gmail.com",
+      to: req.body.email,
+      subject: "Admin Pin",
+      text: `Your admin pin is: ${pin}`,
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        throw error;
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+    });
+
     const user = new users(req.body);
+    user.adminPin = pin;
     await user.save();
     res.status(200).send({
       success: true,
@@ -45,7 +69,9 @@ export const loginController = async (req, res) => {
       username: user_usernameOrEmail,
     });
     if (!existing_user) {
-      existing_user = await users.findOne({ email: user_usernameOrEmail });
+      existing_user = await users.findOne({
+        email: user_usernameOrEmail,
+      });
       if (!existing_user) {
         return res.status(404).send({
           success: false,
@@ -63,6 +89,15 @@ export const loginController = async (req, res) => {
         success: false,
         message: "Wrong credentials",
       });
+    }
+
+    if (req.body.isAdmin) {
+      if (req.body.pin !== user.adminPin) {
+        return res.status(401).send({
+          success: false,
+          message: "Wrong Credentials",
+        });
+      }
     }
 
     //CREATE TOKEN
@@ -94,6 +129,7 @@ export const loginController = async (req, res) => {
 export const currentUserController = async (req, res) => {
   try {
     const user = await users.findOne({ _id: req.body.userId });
+    user.password = undefined;
     return res.status(200).send({
       success: true,
       message: "User data fetched successfully",
@@ -105,6 +141,45 @@ export const currentUserController = async (req, res) => {
       success: false,
       message: "Cannot get current user",
       error,
+    });
+  }
+};
+
+// FORGOT PASSWORD CONTROLLER
+export const forgotPasswordController = async (req, res) => {
+  try {
+    const existing_user = await users.findOne({
+      email: req.body.email,
+    });
+    if (!existing_user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const mailOptions = {
+      from: "sapta21ee8103nitdgp@gmail.com",
+      to: req.body.email,
+      subject: "Password Reset",
+      text: `Click the link to reset the password : http://localhost:5173/reset-password`,
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        throw error;
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+    });
+    res.status(200).send({
+      success: true,
+      message: "Reset Link Sent",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error in forgot-password api",
     });
   }
 };

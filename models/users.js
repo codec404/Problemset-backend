@@ -20,6 +20,12 @@ const userSchema = new mongoose.Schema(
     affiliation: {
       type: String,
     },
+    isAdmin: {
+      type: Boolean,
+    },
+    adminPin: {
+      type: String,
+    }
   },
   { timestamps: true }
 );
