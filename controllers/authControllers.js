@@ -157,11 +157,21 @@ export const forgotPasswordController = async (req, res) => {
         message: "User not found",
       });
     }
+    // CREATE TOKEN
+    const token = jwt.sign(
+      {
+        userId: existing_user._id,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      }
+    );
     const mailOptions = {
       from: "sapta21ee8103nitdgp@gmail.com",
       to: req.body.email,
       subject: "Password Reset",
-      text: `Click the link to reset the password : http://localhost:5173/reset-password`,
+      text: `Click the link to reset the password : http://localhost:5173/reset-password/${existing_user._id}/${token}`,
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
@@ -180,6 +190,44 @@ export const forgotPasswordController = async (req, res) => {
     res.status(500).send({
       success: false,
       message: "Error in forgot-password api",
+    });
+  }
+};
+
+export const resetPasswordController = async (req, res) => {
+  try {
+    const { id, token } = req.params;
+    const password = req.body.password;
+    console.log(password);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const user = await users.findOne({ _id: id });
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "Something went wrong",
+      });
+    }
+    jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+      if (err) {
+        throw err;
+      } else {
+        await users.findByIdAndUpdate(
+          { _id: id },
+          { password: hashedPassword }
+        );
+        
+        return res.status(200).send({
+          success: true,
+          message: "Successfully Updated the password",
+        });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error in reset-password api",
     });
   }
 };
