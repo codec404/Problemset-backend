@@ -29,24 +29,26 @@ export const registerController = async (req, res) => {
     const n = crypto.randomInt(0, 1000000);
     const pin = n.toString().padStart(6, "0");
 
-    // SEND MAIL
-    const mailOptions = {
-      from: "sapta21ee8103nitdgp@gmail.com",
-      to: req.body.email,
-      subject: "Admin Pin",
-      text: `Your admin pin is: ${pin}`,
-    };
+    if (req.body.isAdmin === true) {
+      // SEND MAIL
+      const mailOptions = {
+        from: "sapta21ee8103nitdgp@gmail.com",
+        to: req.body.email,
+        subject: "Admin Pin",
+        text: `Your admin pin is: ${pin}`,
+      };
 
-    transporter.sendMail(mailOptions, function (error, info) {
-      if (error) {
-        throw error;
-      } else {
-        console.log("Email sent: " + info.response);
-      }
-    });
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          throw error;
+        } else {
+          console.log("Email sent: " + info.response);
+        }
+      });
+    }
 
     const user = new users(req.body);
-    user.adminPin = pin;
+    if (req.body.isAdmin === true) user.adminPin = pin;
     await user.save();
     res.status(200).send({
       success: true,
@@ -216,7 +218,7 @@ export const resetPasswordController = async (req, res) => {
           { _id: id },
           { password: hashedPassword }
         );
-        
+
         return res.status(200).send({
           success: true,
           message: "Successfully Updated the password",

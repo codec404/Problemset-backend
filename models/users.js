@@ -2,6 +2,9 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    googleId: {
+      type: String,
+    },
     email: {
       type: String,
       required: [true, "Required Field"],
@@ -25,7 +28,7 @@ const userSchema = new mongoose.Schema(
     },
     adminPin: {
       type: String,
-    }
+    },
   },
   { timestamps: true }
 );
