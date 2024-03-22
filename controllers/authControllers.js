@@ -92,7 +92,7 @@ export const loginController = async (req, res) => {
         message: "Wrong credentials",
       });
     }
-
+    
     if (req.body.isAdmin) {
       if (req.body.pin !== user.adminPin) {
         return res.status(401).send({

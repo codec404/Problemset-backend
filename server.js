@@ -2,11 +2,11 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import authRoutes from "./routes/auth.js";
+import adminRoutes from "./routes/admin.js";
 import { connectDb } from "./config/db.js";
 import morgan from "morgan";
 import session from "express-session";
 import jwt from "jsonwebtoken";
-import { LocalStorage } from "node-localstorage";
 
 dotenv.config();
 connectDb();
@@ -17,7 +17,6 @@ import strategy from "passport-google-oauth2";
 import users from "./models/users.js";
 import { client_id, client_secret } from "./passwords.js";
 const GoogleStrategy = strategy.Strategy;
-const localStorage = new LocalStorage("./scratch");
 
 const app = express();
 
@@ -31,6 +30,7 @@ app.use(
 );
 app.use(morgan("dev"));
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 //setup session
 app.use(
@@ -59,17 +59,18 @@ passport.use(
         let user = await users.findOne({ googleId: profile.id });
         if (!user) {
           user = await users.findOne({ email: profile.emails[0].value });
-          user.googleId = profile.id;
-          user.save();
-        }
-        if (!user) {
-          user = new users({
-            googleId: profile.id,
-            username: profile.displayName,
-            email: profile.emails[0].value,
-            password: process.env.DEMO.toString(),
-          });
-          await user.save();
+          if (!user) {
+            user = new users({
+              googleId: profile.id,
+              username: profile.displayName,
+              email: profile.emails[0].value,
+              password: process.env.DEMO.toString(),
+            });
+            await user.save();
+          } else {
+            user.googleId = profile.id;
+            user.save();
+          }
         }
         return done(null, user);
       } catch (error) {
