@@ -66,3 +66,45 @@ export const getProblemById = async (req, res) => {
     });
   }
 };
+
+export const updateProblemController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const problem = req.body;
+    if (problem) {
+      const updatedProblem = await questions.findByIdAndUpdate(
+        { _id: id },
+        problem
+      );
+      if (updatedProblem) {
+        return res.status(200).send({
+          success: true,
+          message: "Updated Successfully",
+        });
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Problem in Edit Controller",
+    });
+  }
+};
+
+export const deleteProblemController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await questions.findByIdAndDelete(id);
+    return res.status(200).send({
+      success: true,
+      message: "Deleted",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Problem in delete controller",
+    });
+  }
+};
