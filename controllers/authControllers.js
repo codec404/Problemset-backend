@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { transporter } from "../config/mail.js";
+import { error } from "console";
 
 export const registerController = async (req, res) => {
   try {
@@ -92,7 +93,7 @@ export const loginController = async (req, res) => {
         message: "Wrong credentials",
       });
     }
-    
+
     if (req.body.isAdmin) {
       if (req.body.pin !== user.adminPin) {
         return res.status(401).send({
@@ -230,6 +231,68 @@ export const resetPasswordController = async (req, res) => {
     res.status(500).send({
       success: false,
       message: "Error in reset-password api",
+    });
+  }
+};
+
+export const getAllUsersController = async (req, res) => {
+  try {
+    const allUsers = await users.find({});
+    if (allUsers) {
+      return res.status(200).send({
+        success: true,
+        message: "Fetched all users",
+        allUsers,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in get all users api",
+    });
+  }
+};
+
+export const getAdminsOnlyController = async (req, res) => {
+  try {
+    const allAdmins = await users.find({ isAdmin: true });
+    if (allAdmins) {
+      return res.status(200).send({
+        success: true,
+        message: "Fetched all admins",
+        allAdmins,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in get admins only api",
+    });
+  }
+};
+
+export const deleteUserController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id) {
+      await users.findByIdAndDelete(id);
+      return res.status(200).send({
+        success: true,
+        message: "User deleted successfully",
+      });
+    } else {
+      return res.status(404).send({
+        success: false,
+        message: "Couldn't find user",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      success: false,
+      message: "Error in delete user api",
     });
   }
 };
